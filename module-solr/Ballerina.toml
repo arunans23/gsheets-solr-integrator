@@ -1,0 +1,5 @@
+[project]
+org-name = "arunans23"
+version = "0.2.1"
+authors = ["Arunan Sugunakumar"]
+keywords = ["solr", "apache", "apachesolr"]
