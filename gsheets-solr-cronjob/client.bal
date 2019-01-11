@@ -2,12 +2,15 @@ import ballerina/config;
 import ballerina/http;
 import ballerina/io;
 import ballerina/log;
+import ballerina/runtime;
+import ballerina/task;
 
 import wso2/gsheets4;
 
 import arunans23/solr;
 
 
+task:Timer? timer = ();
 
 gsheets4:SpreadsheetConfiguration spreadsheetConfig = {
     clientConfig: {
@@ -27,12 +30,6 @@ solr:Client solrClient;
 
 public function main() {
 
-    solr:SolrConfiguration solrConfig = {
-        baseUrl : config:getAsString("BASE_URL"),
-        collectionName : config:getAsString("COLLECTION_NAME")
-    };
-
-    solrClient = new(solrConfig);
 
     gsheets4:Spreadsheet spreadsheet = new;
 
@@ -44,10 +41,33 @@ public function main() {
     }
     io:println(spreadsheet);
 
+    (function() returns error?) onTriggerFunction = fetchandIndex;
+
+    function(error) onErrorFunction = fetchIndexError;
+
+    timer = new task:Timer(onTriggerFunction, onErrorFunction, config:getAsInt("TIMER_PERIOD", default = 10000),
+        delay = 500);
+
+    timer.start();
+
+    runtime:sleep(30000); // Temp. workaround to stop the process from exiting.
+
+
+}
+
+function fetchandIndex() returns error?{
+
+    solr:SolrConfiguration solrConfig = {
+        baseUrl : config:getAsString("BASE_URL"),
+        collectionName : config:getAsString("COLLECTION_NAME")
+    };
+
+    solrClient = new(solrConfig);
+
     var response1 = spreadsheetClient->getSheetValues(config:getAsString("SPREAD_SHEET_ID"),
-                                                        config:getAsString("SHEET_NAME"),
-                                                        topLeftCell = config:getAsString("TOP_LEFT_CELL"),
-                                                        bottomRightCell = config:getAsString("BOTTOM_RIGHT_CELL")
+        config:getAsString("SHEET_NAME"),
+        topLeftCell = config:getAsString("TOP_LEFT_CELL"),
+        bottomRightCell = config:getAsString("BOTTOM_RIGHT_CELL")
     );
 
 
@@ -67,7 +87,7 @@ public function main() {
                 Firstname : s[2],
                 IndexNo : s[3],
                 TshirtSize : s[4]
-             };
+            };
 
             output[i] = temp;
 
@@ -90,21 +110,28 @@ public function main() {
                 if (indexResponse is boolean){
                     io:println("Successfully indexed the data");
 
+                    return;
+
                 } else {
-                    io:println("Indexing failed");
+                    error e = error("Indexing failed");
+                    return e;
                 }
 
             } else {
-                io:println("Deleting previous index failed");
+
+                error e = error("Deleting previous index failed");
+                return e;
             }
         }
 
-
-
-
     } else {
-
         io:println(response1);
+        error e = error("Fetching data from spreadsheets failed");
+        return e;
     }
+}
 
+function fetchIndexError(error e) {
+    io:print("[ERROR] cleanup failed: ");
+    io:println(e);
 }
