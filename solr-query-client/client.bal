@@ -14,7 +14,7 @@ public function main(string... args) {
 
     solrClient = new(solrConfig);
 
-    if (lengthof args != 1) {
+    if (args.length() != 1) {
         io:println("Usage : <query>");
         return;
 
@@ -31,6 +31,7 @@ public function main(string... args) {
             io:println(outputJson);
 
         } else {
+            io:println(response);
             io:println("Querying solr failed. Check the solr instance up and proper configurations are defined");
         }
     }
