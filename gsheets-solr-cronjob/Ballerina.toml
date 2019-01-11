@@ -1,0 +1,5 @@
+[dependencies."arunans23/solr"]
+version = "0.2.3"
+
+[dependencies."wso2/gsheets4"]
+version = "0.8.20"
