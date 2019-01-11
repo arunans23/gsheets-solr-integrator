@@ -24,6 +24,11 @@ public type Client client object {
     # + return - If success, returns true, else returns `error` object
     public remote function indexJsonData(json jsonData) returns (boolean)|error;
 
+    # Deletes all the data in the index
+    #
+    # + return - If success, returns true, else returns `error` object
+    public remote function deleteIndexData() returns (boolean)|error;
+
 };
 
 remote function Client.queryJsonData(string query1) returns (json)|error {
@@ -61,6 +66,37 @@ remote function Client.indexJsonData(json jsonData) returns (boolean)|error {
     http:Request request = new();
 
     request.setJsonPayload(jsonData, contentType = "application/json");
+
+    var httpResponse = self.solrClient->post(postSolrPath, request);
+
+    if (httpResponse is http:Response) {
+        int statusCode = httpResponse.statusCode;
+        var stringResponse = httpResponse.getPayloadAsString();
+        if (stringResponse is string) {
+            if (statusCode == http:OK_200) {
+                return true;
+            } else {
+                return setResponseError(stringResponse);
+            }
+        } else {
+            error err = error(SOLR_ERROR_CODE,
+            { message: "Error occurred while accessing the String payload of the response" });
+            return err;
+        }
+    } else {
+        error err = error(SOLR_ERROR_CODE, { message: "Error occurred while invoking the REST API" });
+        return err;
+    }
+}
+
+remote function Client.deleteIndexData() returns (boolean)|error {
+    string postSolrPath = PATH_SEPARATOR + UPDATE + QUESTION_MARK + COMMIT + EQUAL_MARK + TRUE;
+
+    http:Request request = new();
+
+    xml payload = xml `<delete><query>*:*</query></delete>`;
+
+    request.setXmlPayload(payload, contentType = "application/xml");
 
     var httpResponse = self.solrClient->post(postSolrPath, request);
 

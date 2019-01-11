@@ -1,5 +1,6 @@
 [project]
 org-name = "arunans23"
-version = "0.2.1"
+version = "0.2.3"
 authors = ["Arunan Sugunakumar"]
 keywords = ["solr", "apache", "apachesolr"]
+repository = "https://github.com/arunans23/gsheets-solr-integrator/tree/master/module-solr"
